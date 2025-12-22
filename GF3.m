@@ -90,9 +90,10 @@ f_eta=f_eta-(round((f_eta-f_eta_c)/Fa))*Fa;
 %% 点目标(三个)坐标设置
 %  设置目标点相对于景中心之间的距离
 
-xA = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-yA = zeros(11);  % A = (0,0)
-RCS = ([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0] .^ 2 + 10) * 1000;
+xA = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+yA = zeros(17);
+%RCS = ([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0] .^ 2 + 10) * 1000;
+RCS = zeros(17) + 1;
 
 disp('size of xA:')
 disp(size(xA))
@@ -100,7 +101,7 @@ disp(size(xA))
 xB = 500;
 yB = 0;  %（500,500）
 
-Position_x_r = (xA(:) - 5) * 500;
+Position_x_r = (xA(:) - 8) * 2000;
 Position_y_a = yA(:); %点目标的坐标矩阵表示
 
 %% 生成回波S_echo
@@ -196,7 +197,9 @@ S4_tau_eta = fftshift(ifft(fftshift(S4_tau_feta, 1), Naz, 1), 1);
 %% 目标的升采样切片
 %采用二维频域补零的方式进行升采样操作;升采样为了提高目标的切片细节丰富程度，便于观察
 CutResolution = 32; %切片尺寸
-Profile_Position = [800, 1135]; %切片的中心点位置
+position_of_points = [796, 887, 977, 1068, 1159, 1250, 1343, 1435, 1528, 1623, 1718];
+Profile_Position = [800, position_of_points(11)]; %切片的中心点位置
+
 % fprintf("\n点目标(C点)坐标对应的距离门到雷达距离为:%.2f\n",(time_tau_r(Profile_Position(2)))*(c/2))
 
 %切片的升采样倍数：10*CutResolution；也就是在二维频域补多少个零
@@ -306,6 +309,10 @@ imagesc(abs(S_echo));
 
 figure('name', 'Noise');
 imagesc(abs(Noise));
+
+%% save data:
+Focused_Data = S4_tau_eta;
+save('Focused_Data.mat', 'Focused_Data');
 
 %% 手动补零
 function [S_FFT]=fft_zero_fill(x,nums)%进行补零；补零前一定要观察二维频谱，避免将补零的数组插到有能量的(黄色)区域，破坏原本的频谱！
