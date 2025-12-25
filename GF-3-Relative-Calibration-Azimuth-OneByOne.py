@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 from scipy.io import loadmat
 from matplotlib import pyplot as plt
@@ -48,6 +50,7 @@ def EnergyExtract(ROI, A_Y_min=145, A_Y_max=217 + 1, A_X_min=175, A_X_max=210 + 
     ########### integration B ###########
     SideLength_B = 100
     NumB = 4 * (SideLength_B ** 2)
+
 
     # [a, b) is used in numpy index:
     ROI_B1 = ROI_Modulus[: SideLength_B, : SideLength_B]
@@ -156,32 +159,39 @@ def EnergyExtract(ROI, A_Y_min=145, A_Y_max=217 + 1, A_X_min=175, A_X_max=210 + 
 
     return Energy
 
+positions_y = np.array([220, 292, 366, 438, 510, 583, 655, 729, 801, 873, 945, 1017, 1090, 1162, 1235, 1307, 1379]) - 1
+positions_x = 1250 - 1
+
 # load data:
-Focused_Data = loadmat('Focused_Data.mat')['Focused_Data']
+Focused_Data = []
 
-# show:
-plt.figure()
-plt.imshow(img2View(Focused_Data, enhance=True))
-plt.title('Focused Data')
+# get Focused Data:
+for idx in range(len(positions_y)):
+    mat_path = 'Focused_Data_Azimuth_{}.mat'.format(idx)
+    if os.path.exists(mat_path):
+        Focused_Data.append(loadmat(mat_path)['Focused_Data'])
+    else:
+        print('Focused data {} not found.'.format(idx))
 
-positions_x = np.array([796, 887, 977, 1068, 1159, 1250, 1343, 1435, 1528, 1623, 1718]) - 1
-positions_y = 800 - 1
+# list to array:
+Focused_Data = np.array(Focused_Data)
 
 # init ROIs:
 ROIs = []
 
-for idx in range(len(positions_x)):
-    x_min = int(positions_x[idx]) - 16
-    x_max = int(positions_x[idx]) + 16 + 1
-    y_min = positions_y - 16
-    y_max = positions_y + 16 + 1
-    ROI = Focused_Data[y_min:y_max, x_min:x_max]
+for idx in range(len(Focused_Data)):
+    y_min = int(positions_y[idx]) - 16
+    y_max = int(positions_y[idx]) + 16 + 1
+    x_min = positions_x - 16
+    x_max = positions_x + 16 + 1
+
+    ROI = Focused_Data[idx][y_min:y_max, x_min:x_max]
     ROIs.append(ROI)
 
 # list 2 np:
 ROIs = np.array(ROIs)
 
-# # show all ROIs:
+# show all ROIs:
 # for idx in range(len(ROIs)):
 #     ROI = ROIs[idx]
 #     plt.figure()
@@ -189,17 +199,25 @@ ROIs = np.array(ROIs)
 #     plt.imshow(img2View(ROI, enhance=False))
 
 # Get Energy:
-Energy0 = EnergyExtract(ROIs[0], A_X_min=164, A_X_max=205, A_Y_min=135, A_Y_max=207, debug=False)
-Energy1 = EnergyExtract(ROIs[1], A_X_min=160, A_X_max=186, A_Y_min=135, A_Y_max=207, debug=False)
-Energy2 = EnergyExtract(ROIs[2], A_X_min=158, A_X_max=184, A_Y_min=131, A_Y_max=205, debug=False)
-Energy3 = EnergyExtract(ROIs[3], A_X_min=154, A_X_max=181, A_Y_min=135, A_Y_max=209, debug=False)
-Energy4 = EnergyExtract(ROIs[4], A_X_min=160, A_X_max=187, A_Y_min=135, A_Y_max=208, debug=False)
-Energy5 = EnergyExtract(ROIs[5], A_X_min=168, A_X_max=194, A_Y_min=135, A_Y_max=208, debug=False)
-Energy6 = EnergyExtract(ROIs[6], A_X_min=165, A_X_max=191, A_Y_min=134, A_Y_max=208, debug=False)
-Energy7 = EnergyExtract(ROIs[7], A_X_min=176, A_X_max=200, A_Y_min=133, A_Y_max=208, debug=False)
-Energy8 = EnergyExtract(ROIs[8], A_X_min=183, A_X_max=208, A_Y_min=135, A_Y_max=210, debug=False)
-Energy9 = EnergyExtract(ROIs[9], A_X_min=177, A_X_max=202, A_Y_min=133, A_Y_max=208, debug=False)
-Energy10 = EnergyExtract(ROIs[10], A_X_min=176, A_X_max=200, A_Y_min=133, A_Y_max=207, debug=False)
+Energy0 = EnergyExtract(ROIs[0], A_X_min=169, A_X_max=195, A_Y_min=135, A_Y_max=210, debug=False)
+Energy1 = EnergyExtract(ROIs[1], A_X_min=169, A_X_max=194, A_Y_min=141, A_Y_max=215, debug=False)
+Energy2 = EnergyExtract(ROIs[2], A_X_min=170, A_X_max=190, A_Y_min=129, A_Y_max=205, debug=False)
+Energy3 = EnergyExtract(ROIs[3], A_X_min=170, A_X_max=192, A_Y_min=134, A_Y_max=207, debug=False)
+Energy4 = EnergyExtract(ROIs[4], A_X_min=170, A_X_max=192, A_Y_min=135, A_Y_max=212, debug=False)
+Energy5 = EnergyExtract(ROIs[5], A_X_min=170, A_X_max=190, A_Y_min=132, A_Y_max=204, debug=False)
+Energy6 = EnergyExtract(ROIs[6], A_X_min=170, A_X_max=190, A_Y_min=134, A_Y_max=211, debug=False)
+Energy7 = EnergyExtract(ROIs[7], A_X_min=170, A_X_max=190, A_Y_min=120, A_Y_max=190, debug=False)
+Energy8 = EnergyExtract(ROIs[8], A_X_min=170, A_X_max=190, A_Y_min=120, A_Y_max=193, debug=False)
+Energy9 = EnergyExtract(ROIs[9], A_X_min=170, A_X_max=190, A_Y_min=128, A_Y_max=199, debug=False)
+Energy10 = EnergyExtract(ROIs[10], A_X_min=170, A_X_max=190, A_Y_min=130, A_Y_max=205, debug=False)
+Energy11 = EnergyExtract(ROIs[11], A_X_min=170, A_X_max=190, A_Y_min=136, A_Y_max=208, debug=False)
+Energy12 = EnergyExtract(ROIs[12], A_X_min=170, A_X_max=190, A_Y_min=128, A_Y_max=202, debug=False)
+Energy13 = EnergyExtract(ROIs[13], A_X_min=170, A_X_max=190, A_Y_min=134, A_Y_max=207, debug=False)
+Energy14 = EnergyExtract(ROIs[14], A_X_min=170, A_X_max=190, A_Y_min=128, A_Y_max=202, debug=False)
+Energy15 = EnergyExtract(ROIs[15], A_X_min=170, A_X_max=195, A_Y_min=132, A_Y_max=206, debug=False)
+Energy16 = EnergyExtract(ROIs[16], A_X_min=170, A_X_max=195, A_Y_min=142, A_Y_max=215, debug=False)
+
+Energy = np.array([Energy0, Energy1, Energy2, Energy3, Energy4, Energy5, Energy6, Energy7, Energy8, Energy9, Energy10, Energy11, Energy12, Energy13, Energy14, Energy15, Energy16])
 
 print('Energy0', Energy0)
 print('Energy1', Energy1)
@@ -212,9 +230,85 @@ print('Energy7', Energy7)
 print('Energy8', Energy8)
 print('Energy9', Energy9)
 print('Energy10', Energy10)
+print('Energy11', Energy11)
+print('Energy12', Energy12)
+print('Energy13', Energy13)
+print('Energy14', Energy14)
+print('Energy15', Energy15)
+print('Energy16', Energy16)
 
 plt.figure('Patten')
-plt.plot([Energy0, Energy1, Energy2, Energy3, Energy4, Energy5, Energy6, Energy7, Energy8, Energy9, Energy10, Energy10])
+plt.title('Patten')
+plt.plot(positions_y, Energy / Energy.max())
+
+my_x_ticks = positions_y  # np.arange(1, 17, 1)
+plt.xticks(my_x_ticks)
+
+# show all targets:
+all_targets = loadmat('Focused_Data_Azimuth.mat')['Focused_Data']
+print(all_targets.shape)
+
+plt.figure('All Targets')
+plt.title('All Targets')
+plt.imshow(img2View(all_targets, enhance=True))
+plt.xlabel('Range')
+plt.ylabel('Azimuth')
+
+plt.figure('Central Target')
+plt.title('Central Target')
+plt.imshow(img2View(ROIs[8], enhance=False))
+plt.xlabel('Range')
+plt.ylabel('Azimuth')
+
+########################################################################################
+ROI = ROIs[8]
+CutResolution = 32
+
+# Upsampling:
+ROI_f = FFT_Azimuth(FFT_Range(ROI, shift=False), shift=False)  # Get Frequency Map
+Y_Insert = np.zeros([10 * CutResolution, 33])
+ROI_f = np.concatenate((ROI_f[0:17], Y_Insert, ROI_f[17:33]), axis=0)
+X_Insert = np.zeros([ROI_f.shape[0], 10 * CutResolution])
+ROI_f_Padded = np.concatenate((ROI_f[:, 0:22], X_Insert, ROI_f[:, 22:33]), axis=1)
+ROI_Upsampled = IFFT_Range(IFFT_Azimuth(ROI_f_Padded, shift=False),
+                           shift=False)  # Back to Range-Azimuth Space Domain:
+
+# Find Max
+UP_Profile_Position_Ran, UP_Profile_Position_Azi = np.where(ROI_Upsampled == ROI_Upsampled.max())
+UP_Profile_Position_Ran, UP_Profile_Position_Azi = int(UP_Profile_Position_Ran[0]), int(UP_Profile_Position_Azi[0])
+
+# 姿态参数
+H = 755e3  # 卫星轨道高度
+phi = 20 * np.pi / 180  # 俯仰角+20°
+incidence = 20.5 * np.pi / 180  # 入射角
+R_eta_c = H / np.cos(incidence)  # 景中心斜距
+R0 = H / np.cos(phi)
+theta_r_c = np.acos(R0 / R_eta_c)  # 斜视角, 单位为 弧度, 斜视角为 4.6°
+
+# Rotate:
+Upsampled_ROI_Mod = np.abs(ROI_Upsampled)
+rotate_matrix = cv.getRotationMatrix2D(center=(UP_Profile_Position_Ran, UP_Profile_Position_Azi),
+                                       angle=rad2deg(theta_r_c), scale=1)
+Rotated_ROI_Modulus = cv.warpAffine(Upsampled_ROI_Mod, rotate_matrix, Upsampled_ROI_Mod.shape[1::-1])
+
+# Find Max
+UP_Profile_Position_Ran, UP_Profile_Position_Azi = np.where(Rotated_ROI_Modulus == Rotated_ROI_Modulus.max())
+UP_Profile_Position_Ran, UP_Profile_Position_Azi = UP_Profile_Position_Ran[0], UP_Profile_Position_Azi[0]
+
+# Get shape of ROI:
+ROI_Modulus = Rotated_ROI_Modulus.copy()
+
+plt.figure('Central Target Upsampled')
+plt.title('Central Target Upsampled')
+plt.imshow(img2View(ROI_Modulus, enhance=False))
+plt.xlabel('Range')
+plt.ylabel('Azimuth')
+########################################################################################
+
+plt.figure('Azimuth Patten')
+plt.title('Azimuth Patten')
+Azimuth_line = ROI_Modulus[:, UP_Profile_Position_Azi]
+plt.plot(Azimuth_line / Azimuth_line.max())
 
 # show all:
 plt.show()

@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 from scipy.io import loadmat
 from matplotlib import pyplot as plt
@@ -48,6 +50,7 @@ def EnergyExtract(ROI, A_Y_min=145, A_Y_max=217 + 1, A_X_min=175, A_X_max=210 + 
     ########### integration B ###########
     SideLength_B = 100
     NumB = 4 * (SideLength_B ** 2)
+
 
     # [a, b) is used in numpy index:
     ROI_B1 = ROI_Modulus[: SideLength_B, : SideLength_B]
@@ -156,26 +159,34 @@ def EnergyExtract(ROI, A_Y_min=145, A_Y_max=217 + 1, A_X_min=175, A_X_max=210 + 
 
     return Energy
 
-# load data:
-Focused_Data = loadmat('Focused_Data.mat')['Focused_Data']
 
-# show:
-plt.figure()
-plt.imshow(img2View(Focused_Data, enhance=True))
-plt.title('Focused Data')
-
-positions_x = np.array([796, 887, 977, 1068, 1159, 1250, 1343, 1435, 1528, 1623, 1718]) - 1
+positions_x = np.array([531, 619, 708, 797, 886, 976, 1067, 1159, 1250, 1342, 1435, 1529, 1623, 1718, 1813, 1909, 2007]) - 1
 positions_y = 800 - 1
+
+# load data:
+Focused_Data = []
+
+# get Focused Data:
+for idx in range(len(positions_x)):
+    mat_path = 'Focused_Data_{}.mat'.format(idx)
+    if os.path.exists(mat_path):
+        Focused_Data.append(loadmat(mat_path)['Focused_Data'])
+    else:
+        print('Focused data {} not found.'.format(idx))
+
+# list to array:
+Focused_Data = np.array(Focused_Data)
 
 # init ROIs:
 ROIs = []
 
-for idx in range(len(positions_x)):
+for idx in range(len(Focused_Data)):
     x_min = int(positions_x[idx]) - 16
     x_max = int(positions_x[idx]) + 16 + 1
     y_min = positions_y - 16
     y_max = positions_y + 16 + 1
-    ROI = Focused_Data[y_min:y_max, x_min:x_max]
+
+    ROI = Focused_Data[idx][y_min:y_max, x_min:x_max]
     ROIs.append(ROI)
 
 # list 2 np:
@@ -188,18 +199,31 @@ ROIs = np.array(ROIs)
 #     plt.title('ROI[{}]'.format(idx))
 #     plt.imshow(img2View(ROI, enhance=False))
 
+# show all Echo:
+for idx in range(len(Focused_Data)):
+    Focused_Data_ = Focused_Data[idx]
+    plt.figure()
+    plt.title('Focused Data[{}]'.format(idx))
+    plt.imshow(img2View(Focused_Data_, enhance=True))
+
 # Get Energy:
-Energy0 = EnergyExtract(ROIs[0], A_X_min=164, A_X_max=205, A_Y_min=135, A_Y_max=207, debug=False)
-Energy1 = EnergyExtract(ROIs[1], A_X_min=160, A_X_max=186, A_Y_min=135, A_Y_max=207, debug=False)
-Energy2 = EnergyExtract(ROIs[2], A_X_min=158, A_X_max=184, A_Y_min=131, A_Y_max=205, debug=False)
-Energy3 = EnergyExtract(ROIs[3], A_X_min=154, A_X_max=181, A_Y_min=135, A_Y_max=209, debug=False)
-Energy4 = EnergyExtract(ROIs[4], A_X_min=160, A_X_max=187, A_Y_min=135, A_Y_max=208, debug=False)
-Energy5 = EnergyExtract(ROIs[5], A_X_min=168, A_X_max=194, A_Y_min=135, A_Y_max=208, debug=False)
+Energy0 = EnergyExtract(ROIs[0], A_X_min=170, A_X_max=198, A_Y_min=135, A_Y_max=208, debug=False)
+Energy1 = EnergyExtract(ROIs[1], A_X_min=167, A_X_max=193, A_Y_min=135, A_Y_max=207, debug=False)
+Energy2 = EnergyExtract(ROIs[2], A_X_min=162, A_X_max=186, A_Y_min=131, A_Y_max=208, debug=False)
+Energy3 = EnergyExtract(ROIs[3], A_X_min=164, A_X_max=187, A_Y_min=135, A_Y_max=209, debug=False)
+Energy4 = EnergyExtract(ROIs[4], A_X_min=169, A_X_max=193, A_Y_min=135, A_Y_max=208, debug=False)
+Energy5 = EnergyExtract(ROIs[5], A_X_min=168, A_X_max=194, A_Y_min=132, A_Y_max=204, debug=False)
 Energy6 = EnergyExtract(ROIs[6], A_X_min=165, A_X_max=191, A_Y_min=134, A_Y_max=208, debug=False)
-Energy7 = EnergyExtract(ROIs[7], A_X_min=176, A_X_max=200, A_Y_min=133, A_Y_max=208, debug=False)
-Energy8 = EnergyExtract(ROIs[8], A_X_min=183, A_X_max=208, A_Y_min=135, A_Y_max=210, debug=False)
-Energy9 = EnergyExtract(ROIs[9], A_X_min=177, A_X_max=202, A_Y_min=133, A_Y_max=208, debug=False)
-Energy10 = EnergyExtract(ROIs[10], A_X_min=176, A_X_max=200, A_Y_min=133, A_Y_max=207, debug=False)
+Energy7 = EnergyExtract(ROIs[7], A_X_min=161, A_X_max=185, A_Y_min=134, A_Y_max=209, debug=False)
+Energy8 = EnergyExtract(ROIs[8], A_X_min=168, A_X_max=193, A_Y_min=135, A_Y_max=210, debug=False)
+Energy9 = EnergyExtract(ROIs[9], A_X_min=176, A_X_max=200, A_Y_min=133, A_Y_max=208, debug=False)
+Energy10 = EnergyExtract(ROIs[10], A_X_min=176, A_X_max=200, A_Y_min=133, A_Y_max=208, debug=False)
+Energy11 = EnergyExtract(ROIs[11], A_X_min=173, A_X_max=199, A_Y_min=136, A_Y_max=212, debug=False)
+Energy12 = EnergyExtract(ROIs[12], A_X_min=176, A_X_max=202, A_Y_min=133, A_Y_max=208, debug=False)
+Energy13 = EnergyExtract(ROIs[13], A_X_min=175, A_X_max=201, A_Y_min=133, A_Y_max=208, debug=False)
+Energy14 = EnergyExtract(ROIs[14], A_X_min=178, A_X_max=204, A_Y_min=133, A_Y_max=208, debug=False)
+Energy15 = EnergyExtract(ROIs[15], A_X_min=177, A_X_max=207, A_Y_min=133, A_Y_max=208, debug=False)
+Energy16 = EnergyExtract(ROIs[16], A_X_min=163, A_X_max=196, A_Y_min=137, A_Y_max=210, debug=False)
 
 print('Energy0', Energy0)
 print('Energy1', Energy1)
@@ -212,9 +236,33 @@ print('Energy7', Energy7)
 print('Energy8', Energy8)
 print('Energy9', Energy9)
 print('Energy10', Energy10)
+print('Energy11', Energy11)
+print('Energy12', Energy12)
+print('Energy13', Energy13)
+print('Energy14', Energy14)
+print('Energy15', Energy15)
+print('Energy16', Energy16)
 
-plt.figure('Patten')
-plt.plot([Energy0, Energy1, Energy2, Energy3, Energy4, Energy5, Energy6, Energy7, Energy8, Energy9, Energy10, Energy10])
+plt.figure('Patten over Range')
+plt.title('Patten over Range')
+plt.plot([Energy0, Energy1, Energy2, Energy3, Energy4, Energy5, Energy6, Energy7, Energy8,
+          Energy9, Energy10, Energy11, Energy12, Energy13, Energy14, Energy15, Energy16])
+
+# plt.plot([Energy8, Energy9, Energy10, Energy11, Energy12, Energy14, Energy15, Energy16])
+
+
+my_x_ticks = np.arange(0, 17, 1)
+plt.xticks(my_x_ticks)
+
+# show all targets:
+all_targets = loadmat('Focused_Data.mat')['Focused_Data']
+print(all_targets.shape)
+
+plt.figure('All Targets')
+plt.title('All Targets')
+plt.imshow(img2View(all_targets, enhance=True))
+plt.xlabel('Range')
+plt.ylabel('Azimuth')
 
 # show all:
 plt.show()
