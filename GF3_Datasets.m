@@ -86,10 +86,12 @@ f_eta=f_eta-(round((f_eta-f_eta_c)/Fa))*Fa;
 
 %% 点目标(三个)坐标设置
 %  设置目标点相对于景中心之间的距离
+which_satelite = 17;
 xA = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+xA = xA(which_satelite);
 yA = zeros(17);
 %RCS = ([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0] .^ 2 + 10) * 1000;
-RCS = zeros(17) + 1;
+RCS = zeros(17) + 9000;
 
 disp('size of xA:')
 disp(size(xA))
@@ -112,20 +114,25 @@ for i = 1:Target_num
     %  计算目标点的瞬时斜距
     R_eta = sqrt((R0_Target)^2+(Vr^2)*((Ext_time_eta_a - Position_y_a(i) / Vr).^2));
     %R_eta=sqrt(H^2+(Position_x_r(i)-(-R0*sin(phi)))^2+(Position_y_a(i)-Ext_time_eta_a*Vr).^2);
+
     %  距离向包络
     Wr = (abs(Ext_time_tau_r-2*R_eta/c) <= Tr / 2);
+    
     %  方位向包络
     % Wa = sinc((La*atan(Vg*(Ext_time_eta_a - time_eta_c_Target)./R0_Target)/lambda).^2);
     Wa = ((La*atan(Vg*(Ext_time_eta_a - time_eta_c_Target)./(R0 * sin(phi) + Position_x_r(i)))/lambda).^2)<=Ta/2;
     % Wa = abs(Ext_time_eta_a-time_eta_c_Target) <= Ta / 2;
+    
     % 相位
     Phase = exp(-1j*4*pi*f0*R_eta/c) .* exp(+1j*pi*Kr*(Ext_time_tau_r - 2 * R_eta / c).^2);
+    
     % 接收信号叠加
     S_echo_Target = Wr .* Wa .* Phase * sqrt(RCS(i));
     
     disp(RCS(i));
 
     S_echo = S_echo + S_echo_Target;
+    
     %%%%%%%%%%%%%%格式化输出%%%%%%%%%%%%%%%%%%
     R_eta_c_Target=R0_Target/cos(theta_r_c);
     fprintf("当前目标:%d,坐标:(%.2f,%.2f),\n最近斜距R0=%.2f,景中心斜距R_eta_c=%.2f,波束中心穿越时刻=%.4f\n", i, Position_x_r(i), Position_y_a(i), R0_Target, R_eta_c_Target,time_eta_c_Target)
@@ -149,7 +156,7 @@ K_src=(2*(Vr^2)*(f0^3)*(D_feta_Vr.^3))./(c*R0*(Ext_f_eta.^2));
 Km=Kr./(1-Kr./K_src);  % 改进的调频率
 Hf = (abs(Ext_f_tau) <= Br / 2) .* exp(+1j*pi*(Ext_f_tau.^2)./Km);  % 匹配滤波器
 
-%  匹配滤波
+% 匹配滤波
 S1_ftau_eta = fftshift(fft(fftshift(S_echo, 2), Nrg, 2), 2);
 S1_ftau_eta = S1_ftau_eta .* Hf;  % 距离频域进行匹配滤波
 S1_tau_eta = fftshift(ifft(fftshift(S1_ftau_eta, 2), Nrg, 2), 2);
@@ -160,7 +167,6 @@ K_src_O=(2*(Vr^2)*(f0^3)*(D_feta_Vr_O.^3))./(c*R0*(Ext_f_eta.^2));
 Km_O=Kr./(1-Kr./K_src_O);
 
 delta_phi_srcf=pi*abs(Km_O-Km)*(Tr/2)^2<pi/2;  % 相位误差应小于pi/2;小于则数组全为1
-
 
 %% 方位向傅里叶变换
 S2_tau_feta = fftshift(fft(fftshift(S1_tau_eta, 1), Naz, 1), 1);
@@ -190,120 +196,70 @@ ABS_offset=exp(-2j*pi*Ext_f_eta*(29/Fa));  % 上面的Offset校准不够精确�
 S4_tau_feta = S3_tau_feta_RCMC .* Haz_BT.*Offset.*ABS_offset;
 S4_tau_eta = fftshift(ifft(fftshift(S4_tau_feta, 1), Naz, 1), 1);
 
-%% 目标的升采样切片
-%采用二维频域补零的方式进行升采样操作;升采样为了提高目标的切片细节丰富程度，便于观察
-CutResolution = 32;  % 切片尺寸
-position_of_points = [796, 887, 977, 1068, 1159, 1250, 1343, 1435, 1528, 1623, 1718];
-Profile_Position = [800, position_of_points(11)];  % 切片的中心点位置
-
-% fprintf("\n点目标(C点)坐标对应的距离门到雷达距离为:%.2f\n",(time_tau_r(Profile_Position(2)))*(c/2))
-
-%切片的升采样倍数：10*CutResolution；也就是在二维频域补多少个零
-S5_tau_eta_Cut = S4_tau_eta(Profile_Position(1)-CutResolution/2:Profile_Position(1)+CutResolution/2, Profile_Position(2)-CutResolution/2:Profile_Position(2)+CutResolution/2);%切片
-
-[S_zero_fill]=fft_zero_fill(S5_tau_eta_Cut,10*CutResolution);  % 补零函数
-
-% denoise for ROI:
-%mean_ = mean(S_zero_fill);
-%std_ = std(S_zero_fill);
-%S_zero_fill = (S_zero_fill - mean_) / std_;
-
-%由于斜视角的存在，在对升采样切片进行剖面分析前，将方位向和距离向都通过角度旋转校正到便于剖面的方向上
-S5_tau_eta_Cut_UP_Azi=imrotate(S_zero_fill,rad2deg(theta_r_c),'bilinear', 'crop');  % 方位向切片无需角度校正
-S5_tau_eta_Cut_UP_Ran = imrotate(S_zero_fill, rad2deg(theta_r_c), 'bilinear', 'crop');  % 角度校正
-
-%求解升采样切片包络的abs最大值坐标，用于下面的剖面
-[UP_Profile_Position_Ran,UP_Profile_Position_Azi] = find(max(max(abs(S5_tau_eta_Cut_UP_Ran)))==abs(S5_tau_eta_Cut_UP_Ran));
-
-%幅度 db 化 + 搬移峰值至 0dB
-%基于上面的升采样插值结果->获得剖面
-Abs_S5_Azi = abs(S5_tau_eta_Cut_UP_Azi(:, UP_Profile_Position_Azi));  % 方位向剖面
-Abs_S5_Azi = Abs_S5_Azi / max(Abs_S5_Azi);  % 移动峰值点
-Abs_S5_Ran = abs(S5_tau_eta_Cut_UP_Ran(UP_Profile_Position_Ran, :));  % 距离向剖面
-Abs_S5_Ran = Abs_S5_Ran / max(Abs_S5_Ran);
-
 %% 距离压缩可视化
 % 距离压缩结果
-figure('name', "after Pulse Compression over Range")
-subplot(1, 2, 1);
-imagesc(real(S1_tau_eta));
-title('Real');
-xlabel('\tau');
-ylabel('\eta');
+%figure('name', "after Pulse Compression over Range")
+%subplot(1, 2, 1);
+%imagesc(real(S1_tau_eta));
+%title('Real');
+%xlabel('\tau');
+%ylabel('\eta');
 
-subplot(1, 2, 2);
-imagesc(abs(S1_tau_eta));
-title('Modulus');
-xlabel('\tau');
-ylabel('\eta');
+%subplot(1, 2, 2);
+%imagesc(abs(S1_tau_eta));
+%title('Modulus');
+%xlabel('\tau');
+%ylabel('\eta');
 
 %% 距离徙动校正可视化
-hold on;
+%hold on;
 
-figure('name', "after RCMC")
-subplot(1, 2, 1);
-imagesc(real(S3_tau_feta_RCMC));
-title('Real');
-xlabel('\tau');
-ylabel('f_\eta');
+%figure('name', "after RCMC")
+%subplot(1, 2, 1);
+%imagesc(real(S3_tau_feta_RCMC));
+%title('Real');
+%xlabel('\tau');
+%ylabel('f_\eta');
 
-subplot(1, 2, 2);
-imagesc(abs(S3_tau_feta_RCMC));
-title('Modulus');
-xlabel('\tau');
-ylabel('f_\eta');
+%subplot(1, 2, 2);
+%imagesc(abs(S3_tau_feta_RCMC));
+%title('Modulus');
+%xlabel('\tau');
+%ylabel('f_\eta');
 
-pix_fnc1 =find(f_eta==f_eta_c);
-pin_fnc2 = 1053;
-pix_fnc3 = 1053;
-line([1, Nrg],[pix_fnc1, pix_fnc1], 'Color', 'red', 'LineWidth', 2);
-line([1, Nrg],[pin_fnc2, pin_fnc2], 'Color', 'red', 'LineWidth', 2);
-line([1, Nrg],[pix_fnc3, pix_fnc3], 'Color', 'red', 'LineWidth', 2);
-hold off;
+%pix_fnc1 =find(f_eta==f_eta_c);
+%pin_fnc2 = 1053;
+%pix_fnc3 = 1053;
+%line([1, Nrg],[pix_fnc1, pix_fnc1], 'Color', 'red', 'LineWidth', 2);
+%line([1, Nrg],[pin_fnc2, pin_fnc2], 'Color', 'red', 'LineWidth', 2);
+%line([1, Nrg],[pix_fnc3, pix_fnc3], 'Color', 'red', 'LineWidth', 2);
+%hold off;
 %% 回波成像
-figure('name', "Final Result")
-subplot(1, 2, 1);
-imagesc(abs(S4_tau_eta));
-title('Modulus');
-xlabel('\tau');
-ylabel('\eta');
-
-subplot(1, 2, 2);
-imagesc(abs(S5_tau_eta_Cut));  % 切片
-title('ROI of Central Point');
-xlabel('\tau');
-ylabel('\eta');
-
-%% 升采样成像
-figure('name', "after Upsampling")
-subplot(2, 2, 1);
-imagesc(abs(S5_tau_eta_Cut_UP_Ran));
-title('Modulus (Range)');
-xlabel('\tau');
-ylabel('\eta');
-
-subplot(2, 2, 3);
-imagesc(abs(S5_tau_eta_Cut_UP_Azi));
-title('Modulus (Azimuth)');
-xlabel('\tau');
-ylabel('\eta');
+%figure('name', "Final Result")
+%subplot(1, 2, 1);
+%imagesc(abs(S4_tau_eta));
+%title('Modulus');
+%xlabel('\tau');
+%ylabel('\eta');
 
 %% lyyy show whole image:
-figure('name', 'final result with enhancing');
-imagesc(abs(S4_tau_eta));
+%figure('name', 'final result with enhancing');
+%imagesc(abs(S4_tau_eta));
 
-figure('name', 'Origin Echo');
-imagesc(abs(Origin_S_echo));
+%figure('name', 'Origin Echo');
+%imagesc(abs(Origin_S_echo));
 
-figure('name', 'Echo');
-imagesc(abs(S_echo));
+%figure('name', 'Echo');
+%imagesc(abs(S_echo));
 
-figure('name', 'Noise');
-imagesc(abs(Noise));
+%figure('name', 'Noise');
+%imagesc(abs(Noise));
 
 %% save data:
-Focused_Data = S4_tau_eta;
-save('Focused_Data.mat', 'Focused_Data');
+Focused_Data = abs(S4_tau_eta);
+path_tosave = '../CalibrationBasedonNanoSatelites-Dataset/mat_files/Focused_Data_' + string(which_satelite) + '_' + string(RCS(which_satelite)) + '.mat';
+save(path_tosave, 'Focused_Data');
+disp('path to save: ' + path_tosave);
 
 %% 手动补零
 function [S_FFT]=fft_zero_fill(x,nums)  % 进行补零；补零前一定要观察二维频谱，避免将补零的数组插到有能量的(黄色)区域，破坏原本的频谱！
@@ -328,7 +284,7 @@ S_FFT=(ifft(ifft(S_FFT,[],1),[],2));  % 反变换，回到二维时域
 end
 
 %% 位置验证
-function [temp]=PositionVal()
+function [temp] = PositionVal()
 
 % 创建一个示例图像
 image = [1 2 3; 4 5 6; 7 8 9];
