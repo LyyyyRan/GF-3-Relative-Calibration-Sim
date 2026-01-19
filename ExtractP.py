@@ -146,7 +146,7 @@ def EnergyExtract(ROI):
     plt.title('"Energy Extraction"')
 
 # load data:
-Focused_Data = loadmat('Focused_Data.mat')['Focused_Data']
+Focused_Data = loadmat('mat_files/Focused_Data.mat')['Focused_Data']
 
 # show:
 plt.figure()

@@ -86,12 +86,12 @@ f_eta=f_eta-(round((f_eta-f_eta_c)/Fa))*Fa;
 
 %% 点目标(三个)坐标设置
 %  设置目标点相对于景中心之间的距离
-which_satelite = 17;
+which_satelite = 9;
 xA = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 xA = xA(which_satelite);
 yA = zeros(17);
 %RCS = ([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0] .^ 2 + 10) * 1000;
-RCS = zeros(17) + 9000;
+RCS = zeros(17) + 200;
 
 disp('size of xA:')
 disp(size(xA))
@@ -149,6 +149,8 @@ Noise = normrnd(0, 1, H, W);
 S_echo = S_echo .* exp(-2j*pi*f_eta_c*Ext_time_eta_a);  % 多普勒中心校正
 Origin_S_echo = S_echo;
 S_echo = S_echo + Noise;
+
+save('S_echo.mat',"S_echo" )
 
 %% 距离压缩(方式3)
 D_feta_Vr=sqrt(1-((lambda*Ext_f_eta).^2)/(4*(Vr^2)));  % 徙动因子

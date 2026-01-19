@@ -13,7 +13,7 @@ from ly_utils import findpeak, Rotate
 
 # some flags:
 __show = True  # whether to show images
-__upsample = False  # whether to upsample
+__upsample = True  # whether to upsample
 
 # Params:
 H = 755e3  # 卫星轨道高度
@@ -21,6 +21,8 @@ phi = 20 * np.pi / 180  # 俯仰角+20°
 incidence = 20.5 * np.pi / 180  # 入射角
 R_eta_c = H / np.cos(incidence)  # 景中心斜距
 R0 = H / np.cos(phi)
+
+# acos(cos(入射角) / cos(phi)):
 theta = np.acos(R0 / R_eta_c)  # 斜视角, 单位为 弧度, 斜视角为 4.6°
 
 # load data:
@@ -72,18 +74,25 @@ if __show:
     plt.xlabel('Range')
     plt.imshow(img2View(ROI, enhance=False))
 
+# # Get Pattern over Azimuth:
+# peak_Azimuth, peak_Range = findpeak(ROI)  # update peak location
+# Pattern_Azimuth = ROI[:, peak_Range]  # get original pattern
+# Pattern_Azimuth = Pattern_Azimuth / Pattern_Azimuth.max()  # Normalization
+
 # Get Pattern over Azimuth:
-peak_Azimuth, peak_Range = findpeak(ROI)  # update peak location
-Pattern_Azimuth = ROI[:, peak_Range]  # get original pattern
+Pattern_Azimuth = mat_file[:, peak_Range]  # get original pattern
+# Pattern_Azimuth = mat_file[peak_Azimuth - 60:peak_Azimuth + 60 + 1, peak_Range]  # get original pattern
 Pattern_Azimuth = Pattern_Azimuth / Pattern_Azimuth.max()  # Normalization
 
 # show Pattern over Azimuth:
 if __show:
-    plt.figure('Pattern_Azimuth')
-    plt.title('Pattern_Azimuth')
+    plt.figure('Pattern_Azimuth[-60:+60]')
+    plt.title('Pattern_Azimuth[-60:+60]')
     plt.xlabel('Azimuth')
     plt.ylabel('Rate')
-    plt.plot(Pattern_Azimuth)
+    plt.plot(Pattern_Azimuth[peak_Azimuth - 60:peak_Azimuth + 60 + 1])
+
+np.save('./npy_files/Pattern_Azimuth.npy', Pattern_Azimuth)
 
 # show all:
 plt.show()
